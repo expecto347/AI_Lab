@@ -14,5 +14,5 @@
 * GUI.py: GUI界面
 
 ## 感谢
-* 本项目由使用了开源Python库![customtkinter](https://github.com/TomSchimansky/CustomTkinter/blob/master/documentation_images/CustomTkinter_logo_light.png?raw=true)
+* 本项目GUI部分使用了开源Python库![customtkinter](https://github.com/TomSchimansky/CustomTkinter/blob/master/documentation_images/CustomTkinter_logo_light.png?raw=true)
 * 并且本项目的API是来自免费的[The ThemePark Live Database](https://themeparks.wiki)
