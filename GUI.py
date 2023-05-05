@@ -1,6 +1,46 @@
+import time as tm
+from multiprocessing import Process
+import asyncio
 import customtkinter
 
 import GETAPI
+import os
+
+
+def set_reminder(park_name, ride_name, time):
+    api = GETAPI.API()
+    api.get_parks()
+    # print(type(time))
+    # print(time)
+    while True:
+        current_time = api.get_ride_time(park_name, ride_name)
+        if current_time == -1:
+            continue
+        elif current_time < time:
+            break
+        tm.sleep(5 * 60)  # Update every 5 minutes
+
+    TopLevelRemindUser(ride_name, current_time)
+
+
+class TopLevelRemindUser(customtkinter.CTk):
+    def __init__(self, ride_name, time):
+        super().__init__()
+        customtkinter.set_appearance_mode("light")
+        customtkinter.set_default_color_theme("dark-blue")
+
+        self.geometry("600x150")
+        self.title("Reminder")
+        self.reminder_Label = customtkinter.CTkLabel(self,
+                                                     text="The wait time of " + ride_name +
+                                                          " is " + str(time) + " minutes now!",
+                                                     fg_color="transparent",
+                                                     text_color="black",
+                                                     font=("Arial", 22))
+        self.reminder_Label.grid(row=0, column=0, sticky="nsew")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.mainloop()
 
 
 class TopLevelReminder(customtkinter.CTkToplevel):
@@ -18,15 +58,21 @@ class TopLevelReminder(customtkinter.CTkToplevel):
                                                      font=("Arial", 22))
         self.reminder_Label.grid(row=0, column=0, sticky="nsew")
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0, 1, 2), weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3), weight=1)
+        self.Label = customtkinter.CTkLabel(self,
+                                            text="Remind me when the wait time less than ",
+                                            fg_color="transparent",
+                                            text_color="black",
+                                            font=("Arial", 18))
+        self.Label.grid(row=1, column=0, sticky="nsew")
         self.option_menu = customtkinter.CTkOptionMenu(self,
                                                        values=["15min", "30min", "45min", "60min", "75min", "90min"])
         self.option_menu.set("15min")
-        self.option_menu.grid(row=1, column=0)
+        self.option_menu.grid(row=2, column=0, padx=(30, 30), pady=(30, 30), sticky="nsew")
         self.reminder_button = customtkinter.CTkButton(self, text="Remind me!",
                                                        command=self.remind_me,
                                                        font=("Robot", 18))
-        self.reminder_button.grid(row=2, column=0)
+        self.reminder_button.grid(row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
     def remind_me(self):
         time = self.option_menu.get()
@@ -39,6 +85,8 @@ class TopLevelReminder(customtkinter.CTkToplevel):
         self.label.grid(row=1, column=0, sticky="nsew")
         self.grid_rowconfigure(1, weight=1)
         self.update()
+        p = Process(target=set_reminder, args=(self.park_name, self.ride_name, int(time.removesuffix("min"))))
+        p.start()
 
 
 class ProjectFrame(customtkinter.CTkFrame):
@@ -47,7 +95,7 @@ class ProjectFrame(customtkinter.CTkFrame):
         self.remind_process = None
         self.park_name = park_name
         self.ride_name = ride_name
-        self.remind_button = customtkinter.CTkButton(self, text="Remind me!",
+        self.remind_button = customtkinter.CTkButton(self, text="Reminder",
                                                      fg_color="Blue",
                                                      text_color="black",
                                                      command=self.remind_me,
@@ -67,21 +115,26 @@ class QueueTimeFrame(customtkinter.CTkScrollableFrame):
         self.fresh_button = None
         self.error_label = None
         self.master = master
-        self.grid_columnconfigure((0, 2), weight=10)
-        self.grid_columnconfigure((1, 3), weight=1)
+        self.grid_columnconfigure((0, 3), weight=10)
+        self.grid_columnconfigure((1, 4), weight=1)
+        self.grid_columnconfigure((2, 5), weight=1)
 
     def update_ride(self, attractions, closed, park_name):
         self.park_name = park_name
         i: int = 0
         j: int = 0
         for key in attractions:
-            ride_name = customtkinter.CTkButton(self, text=key,
-                                                fg_color="transparent",
-                                                text_color="black",
-                                                command=lambda ride_name_=key: self.button(ride_name_),
-                                                font=("Arial", 18))
-            ride_name.grid(row=i, column=j, sticky="nsew")
-            j = j + 1
+            ride_name = customtkinter.CTkLabel(self, text=key,
+                                               fg_color="transparent",
+                                               text_color="black",
+                                               font=("Arial", 18))
+            ride_name.grid(row=i, column=0, sticky="nsew")
+
+            ride_reminder = customtkinter.CTkButton(self, text="Reminder",
+                                                    command=lambda park_name_=park_name, ride_name_=key: self.button(
+                                                        park_name_, ride_name_),
+                                                    font=("Robot", 18))
+            ride_reminder.grid(row=i, column=1, padx=(15, 15), pady=(10, 10), sticky="nsew")
 
             if attractions[key] > 60:
                 ride_time = customtkinter.CTkLabel(self, text=str(attractions[key]) + " minutes",
@@ -99,26 +152,21 @@ class QueueTimeFrame(customtkinter.CTkScrollableFrame):
                 ride_time = customtkinter.CTkLabel(self, text=str(attractions[key]) + " minutes",
                                                    fg_color="green",
                                                    font=("Arial", 18))
-            ride_time.grid(row=i, column=j, padx=(10, 10), pady=(10, 10), sticky="nsew")
-            j = j + 1
-            if j == 4:
-                j = 0
-                i = i + 1
+            ride_time.grid(row=i, column=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
+            i = i + 1
+
         for ride in closed:
             ride_name = customtkinter.CTkLabel(self, text=ride,
                                                fg_color="transparent",
                                                text_color="black",
                                                font=("Arial", 18))
-            ride_name.grid(row=i, column=j, sticky="nsew")
-            j = j + 1
+            ride_name.grid(row=i, column=0, columnspan=2, sticky="nsew")
+
             ride_time = customtkinter.CTkLabel(self, text="Closed",
                                                fg_color="grey",
                                                font=("Arial", 18))
-            ride_time.grid(row=i, column=j, padx=(10, 10), pady=(10, 10), sticky="nsew")
-            j = j + 1
-            if j == 4:
-                j = 0
-                i = i + 1
+            ride_time.grid(row=i, column=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
+            i = i + 1
 
         self.update()
 
@@ -138,8 +186,8 @@ class QueueTimeFrame(customtkinter.CTkScrollableFrame):
         self.update()
         self.master.master.update_rides(park_name)
 
-    def button(self, ride_name):
-        self.master.master.update_project(self.park_name, ride_name)
+    def button(self, park_name, ride_name):
+        self.reminder = TopLevelReminder(self, park_name, ride_name)
 
 
 class RideFrame(customtkinter.CTkFrame):

@@ -2,5 +2,6 @@ import GUI
 
 
 # Init Graphical User Interface
-app = GUI.App()
-app.mainloop()
+if __name__ == "__main__":
+    app = GUI.App()
+    app.mainloop()

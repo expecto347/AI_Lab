@@ -59,9 +59,25 @@ class API:
         Returns the closing and opening time of the park
         """
         try:
-            print(self.api + '/entity/' + self.parks[park_name] + '/schedule')
+            # print(self.api + '/entity/' + self.parks[park_name] + '/schedule')
             schedule_response = requests.get(self.api + '/entity/' + self.parks[park_name] + '/schedule')
         except requests.exceptions.RequestException:
             return 0, 0
         schedule = json.loads(schedule_response.text)
         return schedule["schedule"][1]["closingTime"], schedule["schedule"][1]["openingTime"]
+
+    def get_ride_time(self, park_name, ride_name):
+        """
+        Returns the wait time of a ride
+        """
+        try:
+            park_response = requests.get(self.api + "/entity/" + self.parks[park_name] + '/live')
+        except requests.exceptions.RequestException:
+            return -1
+        park = json.loads(park_response.text)
+        try:
+            for live in park["liveData"]:
+                if live["name"] == ride_name:
+                    return live["queue"]["STANDBY"]["waitTime"]
+        except KeyError:
+            return -1
