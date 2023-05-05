@@ -89,22 +89,6 @@ class TopLevelReminder(customtkinter.CTkToplevel):
         p.start()
 
 
-class ProjectFrame(customtkinter.CTkFrame):
-    def __init__(self, master, park_name, ride_name):
-        super().__init__(master)
-        self.remind_process = None
-        self.park_name = park_name
-        self.ride_name = ride_name
-        self.remind_button = customtkinter.CTkButton(self, text="Reminder",
-                                                     fg_color="Blue",
-                                                     text_color="black",
-                                                     command=self.remind_me,
-                                                     font=("Robot", 18))
-        self.remind_button.grid(row=0, column=0, sticky="nsew")
-
-    def remind_me(self):
-        self.remind_process = TopLevelReminder(self, self.park_name, self.ride_name)
-
 
 class QueueTimeFrame(customtkinter.CTkScrollableFrame):
     park_name = None
@@ -112,6 +96,7 @@ class QueueTimeFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master):
         super().__init__(master)
 
+        self.reminder = None
         self.fresh_button = None
         self.error_label = None
         self.master = master
@@ -221,13 +206,6 @@ class RideFrame(customtkinter.CTkFrame):
         self.queue_time_frame.grid(row=2, column=0, sticky="nsew")
         self.queue_time_frame.update_ride(attractions, closed, park_name)
         self.update()
-
-    def update_project(self, park_name, ride_name, wait_time):
-        self.title.configure(text=ride_name)
-        self.schedule.configure(text="Wait time: " + str(wait_time) + " minutes")
-        self.queue_time_frame.destroy()
-        self.queue_time_frame = ProjectFrame(self, park_name, ride_name)
-        self.queue_time_frame.grid(row=2, column=0, sticky="nsew")
 
     def get_ride_error(self, name):
         self.queue_time_frame.destroy()
@@ -367,7 +345,3 @@ class App(customtkinter.CTk):
             else:
                 self.ride_frame.update_rides(name, self.attractions, self.closed, closing_time, opening_time)
         self.update()
-
-    def update_project(self, park_name, ride_name):
-        self.park_frame.update_rides(self.attractions)
-        self.ride_frame.update_project(park_name, ride_name, self.attractions[ride_name])
